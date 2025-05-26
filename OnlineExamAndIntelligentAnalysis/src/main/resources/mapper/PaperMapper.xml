@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.PaperMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.vo.PaperVo">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="subjectId" column="subject_id" jdbcType="BIGINT"/>
+        <result property="examTime" column="exam_time" jdbcType="TIMESTAMP"/>
+        <result property="examDuration" column="exam_duration" jdbcType="INTEGER"/>
+        <result property="totalScore" column="total_score" jdbcType="INTEGER"/>
+        <result property="singleChoiceNum" column="single_choice_num" jdbcType="INTEGER"/>
+        <result property="moreChoiceNum" column="more_choice_num" jdbcType="INTEGER"/>
+        <result property="judgeNum" column="judge_num" jdbcType="INTEGER"/>
+        <result property="tips" column="tips" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+        <result property="subjectName" column="subject_name" jdbcType="VARCHAR"/>
+        <result property="majorName" column="major_name" jdbcType="VARCHAR"/>
+        <result property="instituteName" column="institute_name" jdbcType="VARCHAR"/>
+        <result property="grade" column="grade" jdbcType="CHAR"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,name,subject_id,
+        exam_time,exam_duration,total_score,
+        multi_choice_num,judge_num,create_time,
+        update_time,is_deleted
+    </sql>
+    <select id="getAllPapers" resultMap="BaseResultMap">
+        select p.id,
+               p.name,
+               p.subject_id,
+               p.exam_time,
+               p.exam_duration,
+               p.total_score,
+               p.single_choice_num,
+               p.more_choice_num,
+               p.judge_num,
+               p.tips,
+               p.create_time,
+               p.update_time,
+               p.is_deleted,
+               subject.name as subject_name,
+               i.name       as institute_name,
+               m.name       as major_name,
+               c2.grade     as grade
+        from paper p
+                 left join subject on p.subject_id = subject.id and subject.is_deleted = 0
+                 left join class_paper cp on p.id = cp.paper_id and cp.is_deleted = 0
+                 left join class c2 on cp.class_id = c2.id and c2.is_deleted = 0
+                 left join major m on c2.major_id = m.id and m.is_deleted = 0
+                 left join institution i on m.institution_id = i.id and i.is_deleted = 0
+        where p.is_deleted = 0
+        order by exam_time desc
+    </select>
+
+    <!--获取试卷详细信息-->
+    <select id="getPaperDetailById" resultType="com.exam.vo.PaperDetailVo">
+        select p.name          as description,
+               p.update_time   as updateTime,
+               p.exam_time     as examTime,
+               p.id            as paperId,
+               p.tips          as tips,
+               p.exam_duration as totalTime,
+               p.total_score   as totalScore,
+--                c2.grade        as grade,
+--                i.name          as institute,
+--                m.name          as major,
+               s.name          as subject
+        from paper p
+                 join subject s on p.subject_id = s.id and s.is_deleted = 0
+--                  join class_paper cp on p.id = cp.paper_id and cp.is_deleted = 0
+--                  join class c2 on cp.class_id = c2.id and c2.is_deleted = 0
+--                  join major m on c2.major_id = m.id and m.is_deleted = 0
+--                  join institution i on m.institution_id = i.id and i.is_deleted = 0
+        where p.id = #{paperId}
+          and p.is_deleted = 0
+    </select>
+    <select id="getQuestionNumScore" resultType="com.exam.vo.TestQuestionVo">
+        select count(*) questionNumByType, SUM(q.score_value) totalScoreByType, q.type questionType
+        from paper p
+                 left join paper_question pq on p.id = pq.paper_id
+                 join question q on pq.question_id = q.id
+        where p.id = #{paperId}
+        GROUP BY q.type
+    </select>
+    <select id="getAllPapersByStudentId" resultMap="BaseResultMap">
+        select p.id,
+               p.name,
+               p.subject_id,
+               p.exam_time,
+               p.exam_duration,
+               p.total_score,
+               p.single_choice_num,
+               p.more_choice_num,
+               p.judge_num,
+               p.tips,
+               p.create_time,
+               p.update_time,
+               p.is_deleted,
+               subject.name as subject_name,
+               i.name       as institute_name,
+               m.name       as major_name,
+               c2.grade     as grade
+        from paper p
+                  join subject on p.subject_id = subject.id and subject.is_deleted = 0
+                  join class_paper cp on p.id = cp.paper_id and cp.is_deleted = 0
+                  join class c2 on cp.class_id = c2.id and c2.is_deleted = 0
+                  join major m on c2.major_id = m.id and m.is_deleted = 0
+                  join institution i on m.institution_id = i.id and i.is_deleted = 0
+
+        where p.is_deleted = 0 and c2.id=(select student.class_id from student where student_id=#{studentId})
+        <if test="key != null">
+            and subject.name like concat('%',#{key},'%')
+        </if>
+        <choose>
+            <when test="time == '未开始'">
+                and p.exam_time &gt; now()
+            </when>
+            <when test="time == '进行中'">
+                and p.exam_time &lt;= now() and DATE_ADD(p.exam_time, INTERVAL p.exam_duration MINUTE) &gt; now()
+            </when>
+            <when test="time == '已结束'">
+                and DATE_ADD(p.exam_time, INTERVAL p.exam_duration MINUTE) &lt; now()
+            </when>
+        </choose>
+
+        order by exam_time desc
+
+    </select>
+
+    <select id="getQuestionByType" resultType="com.exam.vo.QuestionByTypeVo">
+        select
+            q.type questionType,
+            count(*) questionNums,
+            sum(q.score_value) totalScore
+        from paper p
+                 left join paper_question pq on p.id = pq.paper_id and pq.is_deleted = 0
+                 left join question q on pq.question_id = q.id and q.is_deleted = 0
+        where p.id = #{examId}
+        group by q.type
+    </select>
+    <select id="getAnswersByQuestionType" resultType="com.exam.vo.Answer">
+        select
+            q.id questionId,
+            q.score_value questionScore
+        from paper p
+            join paper_question pq on p.id = pq.paper_id and pq.is_deleted = 0
+            join question q on pq.question_id = q.id and q.is_deleted = 0
+        where q.type = #{code} and p.id = #{examId}
+    </select>
+
+
+</mapper>

@@ -1,0 +1,58 @@
+{
+  "groups": [
+    {
+      "name": "aliyun.sms",
+      "type": "com.exam.utils.sms.AliyunSMSProperties",
+      "sourceType": "com.exam.utils.sms.AliyunSMSProperties"
+    },
+    {
+      "name": "minio",
+      "type": "com.exam.config.minio.MinioProperties",
+      "sourceType": "com.exam.config.minio.MinioProperties"
+    },
+    {
+      "name": "spring.datasource",
+      "type": "javax.sql.DataSource",
+      "sourceType": "com.exam.config.DruidDataSoruceConfig",
+      "sourceMethod": "dataSource()"
+    }
+  ],
+  "properties": [
+    {
+      "name": "aliyun.sms.access-key-id",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.utils.sms.AliyunSMSProperties"
+    },
+    {
+      "name": "aliyun.sms.access-key-secret",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.utils.sms.AliyunSMSProperties"
+    },
+    {
+      "name": "aliyun.sms.endpoint",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.utils.sms.AliyunSMSProperties"
+    },
+    {
+      "name": "minio.access-key",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.config.minio.MinioProperties"
+    },
+    {
+      "name": "minio.bucket-name",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.config.minio.MinioProperties"
+    },
+    {
+      "name": "minio.endpoint",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.config.minio.MinioProperties"
+    },
+    {
+      "name": "minio.secret-key",
+      "type": "java.lang.String",
+      "sourceType": "com.exam.config.minio.MinioProperties"
+    }
+  ],
+  "hints": []
+}

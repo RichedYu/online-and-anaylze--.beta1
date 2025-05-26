@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.ScoreDetailMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.ScoreDetail">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="scoreId" column="score_id" jdbcType="BIGINT"/>
+        <result property="paperQuestionId" column="paper_question_id" jdbcType="BIGINT"/>
+        <result property="answer" column="answer" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,score_id,paper_question_id,
+        answer,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getAnswer" resultType="com.exam.vo.Answer">
+        select q.id       questionId,
+               sd.answer  answer,
+               q.analysis analysis
+        from score_detail sd
+                 join score s on sd.score_id = s.id and s.is_deleted = 0
+                 join paper_question pq on sd.paper_question_id = pq.id and pq.is_deleted = 0
+                 join question q on pq.question_id = q.id and q.is_deleted = 0
+        where sd.is_deleted = 0
+          and sd.score_id = #{scoreId}
+    </select>
+    <select id="getNumByQuestionType" resultType="com.exam.vo.TestQuestionVo">
+        select count(*) questionNumByType, q.type questionType
+        from score_detail
+--         join paper_question pq on score_detail.paper_question_id = pq.id and pq.is_deleted = 0
+        join question q on score_detail.question_id = q.id and q.is_deleted = 0
+        where score_detail.is_deleted = 0
+        and score_detail.score_id in
+        <foreach collection="scoreIds" item="scoreId" open="(" separator="," close=")">
+            #{scoreId}
+        </foreach>
+        group by q.type
+    </select>
+    <select id="getCorrectByQuestionType" resultType="com.exam.vo.TestQuestionVo">
+        select count(*) questionNumByType, q.type questionType
+        from score_detail
+--         join paper_question pq on score_detail.paper_question_id = pq.id and pq.is_deleted = 0
+        join question q on score_detail.question_id = q.id and q.is_deleted = 0
+        where score_detail.is_deleted = 0
+        and score_detail.score_id in
+        <foreach collection="scoreIds" item="scoreId" open="(" separator="," close=")">
+            #{scoreId}
+        </foreach>
+        and score_detail.score > 0
+        group by q.type
+    </select>
+    <select id="getQuestionsByScoreIds" resultType="com.exam.dto.QuestionByChapterSumDto">
+        select
+        q.id questionId,
+        q.chapter_id chapterId,
+        q.level level,
+        (case when sd.score > 0 then 1 else 0 end) result
+        from score_detail sd
+        join paper_question pq on sd.paper_question_id = pq.id and pq.is_deleted = 0
+        join question q on pq.question_id = q.id and q.is_deleted = 0
+        where sd.is_deleted = 0
+        and sd.score_id in
+        <foreach collection="scores" item="score" open="(" separator="," close=")">
+            #{score.id}
+        </foreach>
+    </select>
+    <select id="getExamQuestionChapter" resultType="java.util.HashMap">
+        select
+        c.name chapterName,
+        count(q.id) questionNum
+        from score_detail sd
+        join question q on sd.question_id = q.id and q.is_deleted = 0
+        join chapter c on q.chapter_id = c.id and c.is_deleted = 0
+        where sd.is_deleted = 0
+        and sd.score_id = #{scoreId}
+        group by c.name
+    </select>
+    <select id="getExamQuestionChapterScoreRate" resultType="java.util.HashMap">
+        select
+        c.name chapterName,
+        sum(score_detail.score)/sum(q.score_value) scoreRate
+        from score_detail
+        join question q on score_detail.question_id = q.id and q.is_deleted = 0
+        join chapter c on q.chapter_id = c.id and c.is_deleted = 0
+        where score_detail.is_deleted = 0
+        and score_detail.score_id = #{scoreId}
+        group by c.name,c.id
+    </select>
+</mapper>

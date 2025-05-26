@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.JudgeMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Judge">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="questionId" column="question_id" jdbcType="BIGINT"/>
+        <result property="correctAnswer" column="correct_answer" jdbcType="OTHER"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,question_id,right_answer,
+        wrong_answer,correct_answer,create_time,
+        update_time,is_deleted
+    </sql>
+    <select id="getAllDetailByPaperId" resultType="com.exam.vo.JudgeVo">
+        select q.question question, q.id questionId,q.score_value score,j.correct_answer answer
+        from paper p
+                 join paper_question pq on p.id = pq.paper_id and pq.is_deleted = 0
+                 join question q on pq.question_id = q.id and q.is_deleted = 0
+                 join judge j on q.id = j.question_id and j.is_deleted = 0
+
+        where p.id = #{paperId}
+          and q.type = '3'
+          and p.is_deleted = 0
+    </select>
+</mapper>

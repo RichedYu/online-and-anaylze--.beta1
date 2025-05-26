@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.KnowledgePointsMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.KnowledgePoints">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="chapterId" column="chapter_id" jdbcType="BIGINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,chapter_id,
+        create_time,update_time,is_deleted
+    </sql>
+    <select id="getSubjectKnowledgePoint" resultType="com.exam.vo.KnowledgePointsAnalysisVo">
+        select
+        kp.id as id,
+        kp.name as name,
+        chapter.id as chapterId,
+        chapter.name as chapterName
+        from knowledge_points as kp
+        join chapter on kp.chapter_id = chapter.id and chapter.is_deleted = 0
+        join subject on chapter.subject_id = subject.id and subject.id = #{subjectId} and subject.is_deleted = 0
+        where kp.is_deleted = 0
+        order by kp.id
+    </select>
+    <select id="getChapterList" resultType="com.exam.vo.KnowledgeInfoVo">
+        select
+        kp.id as knowledgeId,
+        kp.name as knowledgeName,
+        chapter.name as chapterName,
+        (select count(*) from question where question.knowledge_point_ids like concat('%[', kp.id, ']%') and question.is_deleted = 0) as questionCount,
+        kp.create_time as createTime,
+        kp.update_time as updateTime
+        from knowledge_points as kp
+        join chapter on kp.chapter_id = chapter.id and chapter.is_deleted = 0
+        where kp.is_deleted = 0
+        <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+            and (kp.name like concat('%', #{keyword}, '%') or chapter.name like concat('%', #{keyword}, '%'))
+        </if>
+        order by kp.id
+
+    </select>
+</mapper>

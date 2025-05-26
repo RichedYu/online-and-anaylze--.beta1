@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.QuestionMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Question">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="question" column="question" jdbcType="VARCHAR"/>
+            <result property="analysis" column="analysis" jdbcType="VARCHAR"/>
+            <result property="scoreValue" column="score_value" jdbcType="INTEGER"/>
+            <result property="type" column="type" jdbcType="OTHER"/>
+            <result property="chapterId" column="chapter_id" jdbcType="BIGINT"/>
+            <result property="level" column="level" jdbcType="OTHER"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,question,analysis,
+        score_value,type,subject_id,
+        level,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getQuestionList" resultType="com.exam.vo.QuestionInfoVo">
+        select
+        q.id questionId,
+        q.question questionContent,
+        q.score_value questionScore,
+        if(q.type=1,'单选题',if(q.type=2,'多选题',if(q.type=3,'判断题',if(q.type=4,'填空题',if(q.type=5,'简答题',if(q.type=6,'应用题','未知类型')))))) questionTypeName,
+        if(q.level=1,'简单',if(q.level=2,'普通',if(q.level=3,'中等',if(q.level=4,'较难',if(q.level=5,'困难','未知难度'))))) questionLevelName,
+        c.id chapterId,
+        c.name chapterName,
+        q.create_time createTime,
+        q.update_time updateTime
+
+        from question q
+        join chapter c on q.chapter_id = c.id and c.is_deleted = 0
+        join subject s on c.subject_id = s.id and s.is_deleted = 0
+        <where>
+            <if test="subjectId != 0 and subjectId!= null and subjectId!= '' ">
+                and s.id = #{subjectId}
+            </if>
+            <if test="chapterId != 0 and chapterId!= null and chapterId!= '' ">
+                and c.id = #{chapterId}
+            </if>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (q.id like concat('%', #{keyword}, '%') or q.question like concat('%', #{keyword}, '%') or q.analysis like concat('%', #{keyword}, '%') or q.type like concat('%', #{keyword}, '%') or q.level like concat('%', #{keyword}, '%'))
+            </if>
+            and q.is_deleted = 0
+        </where>
+
+    </select>
+    <select id="getQuestionBySubjectIdAndType" resultType="com.exam.entity.Question">
+        select
+        question.id
+        from question
+        join chapter c on question.chapter_id = c.id and c.is_deleted = 0
+        join subject s on c.subject_id = s.id and s.is_deleted = 0
+        where s.id = #{subjectId} and type = #{code} and question.is_deleted = 0
+    </select>
+    <select id="getWrongQuestion" resultType="com.exam.vo.QuestionVo">
+        select
+        q.id questionId,
+        q.question question,
+        q.score_value score,
+        if(q.type=1,'单选题',if(q.type=2,'多选题',if(q.type=3,'判断题',if(q.type=4,'填空题',if(q.type=5,'简答题',if(q.type=6,'应用题','未知类型')))))) type,
+        sd.correct_answer answer,
+        q.analysis analysis,
+        count(q.id) answerCount
+        from score s
+        join score_detail sd on s.id = sd.score_id and sd.is_deleted = 0
+        join question q on sd.question_id = q.id and q.is_deleted = 0
+        join paper p on s.paper_id = p.id and p.is_deleted = 0
+        join subject sub on p.subject_id = sub.id and sub.is_deleted = 0
+        where s.student_id = #{studentId} and sub.id = #{subjectId}
+        and sd.score &lt; q.score_value
+        group by q.id, q.question, q.score_value, if(q.type=1,'单选题',if(q.type=2,'多选题',if(q.type=3,'判断题',if(q.type=4,'填空题',if(q.type=5,'简答题',if(q.type=6,'应用题','未知类型')))))), sd.correct_answer, q.analysis
+        order by q.id
+    </select>
+</mapper>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.InstitutionMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Institution">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,name,create_time,
+        update_time,is_deleted
+    </sql>
+    <select id="getInstitutionList" resultType="com.exam.vo.InstitutionInfoVo">
+        SELECT
+        institution.id institutionId,
+        institution.name institutionName,
+        IFNULL(m.majorCount, 0) AS majorCount,
+        IFNULL(student.studentCount, 0) AS studentCount,
+        institution.create_time createTime,
+        institution.update_time updateTime
+        FROM institution
+        LEFT JOIN
+        (
+        select
+        institution_id, COUNT(*) as majorCount
+        from major
+        where is_deleted = 0
+        group by institution_id
+        ) m ON institution.id = m.institution_id
+        LEFT JOIN
+        (
+        select institution_id, COUNT(*) as studentCount
+        from student
+        where is_deleted = 0
+        group by institution_id
+        ) student ON institution.id = student.institution_id
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                AND institution.name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            and institution.is_deleted = 0
+        </where>
+
+    </select>
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.ChapterMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Chapter">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="subjectId" column="subject_id" jdbcType="BIGINT"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,name,subject_id,
+        create_time,update_time,is_deleted
+    </sql>
+    <select id="getChapterList" resultType="com.exam.vo.ChapterInfoVo">
+        select
+        c.id chapterId,
+        c.name chapterName,
+        s.name subjectName,
+        ifnull(q.questionCount, 0) questionCount,
+        c.create_time createTime,
+        c.update_time updateTime
+        from chapter c
+        left join subject s on c.subject_id = s.id and s.is_deleted = 0
+        left join (
+        select chapter_id, count(*) as questionCount from question where is_deleted = 0 group by chapter_id
+        ) q on c.id = q.chapter_id
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (c.name like concat('%', #{keyword}, '%') or s.name like concat('%', #{keyword}, '%'))
+            </if>
+            and c.is_deleted = 0
+        </where>
+    </select>
+</mapper>

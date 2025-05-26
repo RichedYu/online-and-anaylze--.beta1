@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.SubjectMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Subject">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,create_time,
+        update_time,is_deleted
+    </sql>
+    <select id="getSubjectList" resultType="com.exam.vo.SubjectInfoVo">
+        select s.id subjectId,
+               s.name subjectName,
+               count(distinct c.id) chapterCount,
+               count(distinct p.id) paperCount,
+               s.create_time createTime,
+               s.update_time updateTime
+        from subject s
+        left join chapter c on s.id = c.subject_id and s.is_deleted = 0
+        left join paper p on s.id = p.subject_id and c.is_deleted = 0
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and s.name like concat('%', #{keyword}, '%')
+            </if>
+            and s.is_deleted = 0
+        </where>
+        GROUP BY s.id, s.name, s.create_time, s.update_time, s.is_deleted
+
+    </select>
+</mapper>

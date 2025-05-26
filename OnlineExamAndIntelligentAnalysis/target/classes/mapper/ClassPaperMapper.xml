@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.ClassPaperMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.ClassPaper">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="paperId" column="paper_id" jdbcType="BIGINT"/>
+        <result property="classId" column="class_id" jdbcType="BIGINT"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,paper_id,class_id,
+        create_time,update_time,is_deleted
+    </sql>
+    <select id="getClassPaper" resultType="java.lang.Long">
+        select paper_id
+        from class_paper
+                 join paper on class_paper.paper_id = paper.id and paper.is_deleted = 0
+        where class_id = #{classId}
+          and paper.subject_id = #{subjectId}
+--           and DATE_ADD(paper.exam_time, INTERVAL paper.exam_duration MINUTE) &lt;= NOW()
+          and class_paper.is_deleted = 0
+        order by paper.exam_time desc
+        limit #{nums}
+    </select>
+
+</mapper>

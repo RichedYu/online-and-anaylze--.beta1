@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.ScoreMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Score">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="studentId" column="student_id" jdbcType="BIGINT"/>
+        <result property="paperId" column="paper_id" jdbcType="BIGINT"/>
+        <result property="answerDate" column="answer_date" jdbcType="TIMESTAMP"/>
+        <result property="time" column="time" jdbcType="INTEGER"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,score,student_id,
+        paper_id,answer_date,time,
+        create_time,update_time,is_deleted
+    </sql>
+
+    <resultMap id="ScoreVoResultMap" type="com.exam.vo.ScoreVo">
+        <id property="scoreId" column="id" jdbcType="BIGINT"/>
+        <result property="score" column="score" jdbcType="INTEGER"/>
+        <result property="subject" column="subject_name" jdbcType="VARCHAR"/>
+        <result property="answerDate" column="answer_date" jdbcType="OTHER"/>
+    </resultMap>
+
+    <select id="findById" resultMap="ScoreVoResultMap">
+        select score.id          as id,
+               score.score       as score,
+               paper.id          as paperId,
+               score.answer_date as answer_date,
+               s.name            as subject_name
+        from score
+                 left join paper on score.paper_id = paper.id and paper.is_deleted = 0
+                 left join subject s on paper.subject_id = s.id and s.is_deleted = 0
+        where student_id = #{studentId}
+          and score.is_deleted = 0 and score.review = '1'
+    </select>
+    <select id="selectByStudentIdAndSubjectId" resultType="com.exam.entity.Score">
+        select score.id, score.score, score.student_id, score.paper_id, score.answer_date, score.time
+        from score
+                 join paper on score.paper_id = paper.id and paper.is_deleted = 0
+        where student_id = #{studentId}
+          and paper.subject_id = #{subjectId}
+          and score.is_deleted = 0
+          and score.review = '1'
+    </select>
+    <select id="reviewList" resultType="com.exam.vo.MarkingPaperVo">
+        select
+        score.id as scoreId,
+        user.name as studentName,
+        score.paper_id as paperId,
+        s.name subjectName,
+        paper.name as paperName,
+        score.score as score,
+        score.answer_date as answerDate,
+        score.time as answerTime,
+        score.review as reviewStatus
+        from score
+        join student on score.student_id = student.student_id and student.is_deleted = 0
+        join paper on score.paper_id = paper.id and paper.is_deleted = 0
+        join user on student.user_id = user.id and user.is_deleted = 0
+        join subject s on paper.subject_id = s.id and s.is_deleted = 0
+        <where>
+            <if test="paperId != 0 and paperId!= null and paperId!= '' ">
+                and score.paper_id = #{paperId}
+            </if>
+            <if test="classId != 0 and classId!= null and classId!= '' ">
+                and student.class_id = #{classId}
+            </if>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (score.id like concat('%', #{keyword}, '%') or user.name like concat('%', #{keyword}, '%')
+                or paper.name like concat('%', #{keyword}, '%') or score.answer_date like concat('%', #{keyword}, '%')
+                )
+            </if>
+            and score.is_deleted = 0 and score.review = '0'
+        </where>
+    </select>
+    <select id="getAnswer" resultType="com.exam.vo.Answer">
+        select score_detail.question_id    as questionId,
+               score_detail.answer         as answer,
+               score_detail.correct_answer as analysis
+        from score_detail
+        where score_detail.is_deleted = 0
+          and score_detail.score_id = #{scoreId}
+    </select>
+    <select id="getExamInfo" resultType="com.exam.dto.ScoreAnalysisDto">
+        select
+        subject.name as subjectName,
+        paper.name as paperName,
+        user.name as studentName,
+        score.score as score,
+        score.answer_date as answerDate,
+        score.time as time
+        from score
+        join student on score.student_id = student.student_id and student.is_deleted = 0
+        join user on student.user_id = user.id and user.is_deleted = 0
+        join paper on score.paper_id = paper.id and paper.is_deleted = 0
+        join subject on paper.subject_id = subject.id and subject.is_deleted = 0
+        where score.id = #{scoreId}
+    </select>
+    <select id="getQuestionInfo" resultType="com.exam.vo.QuestionInfoVo">
+        select
+        q.id as questionId,
+        q.question as questionContent,
+        q.score_value as questionScore,
+        q.type as questionType,
+        if(q.type=1,'单选题',if(q.type=2,'多选题',if(q.type=3,'判断题',if(q.type=4,'填空题',if(q.type=5,'简答题',if(q.type=6,'应用题','未知类型')))))) questionTypeName,
+        if(q.level=1,'简单',if(q.level=2,'中等',if(q.level=3,'困难','未知难度'))) questionLevelName,
+        c.id chapterId,
+        c.name chapterName,
+        score_detail.score as score,
+        score_detail.answer as answer,
+        score_detail.correct_answer as correctAnswer
+        from score_detail
+        join question q on score_detail.question_id = q.id
+        join chapter c on q.chapter_id = c.id
+        where score_detail.is_deleted = 0 and score_detail.score_id=#{scoreId}
+
+    </select>
+    <select id="getExamQuestionTypeAnalysis" resultType="com.exam.vo.QuestionTypeAnalysisVo">
+        select
+            if(q.type=1,'单选题',if(q.type=2,'多选题',if(q.type=3,'判断题',if(q.type=4,'填空题',if(q.type=5,'简答题',if(q.type=6,'应用题','未知类型')))))) questionType,
+            IFNULL(count(q.id),0) as questionCount,
+            IFNULL(sum(q.score_value),0) as totalScore,
+            IFNULL(sum(score_detail.score),0) as userScore,
+            IFNULL(sum(score_detail.score)/sum(q.score_value),0) as scoreRate
+        from score_detail
+        join question q on score_detail.question_id = q.id and q.is_deleted=0
+        where score_detail.is_deleted = 0 and score_detail.score_id=#{scoreId}
+        group by q.type
+    </select>
+    <select id="getExamQuestionDifficulty" resultType="com.exam.vo.QuestionTypeAnalysisVo">
+        select
+            if(q.level=1,'简单',if(q.level=2,'普通',if(q.level=3,'中等',if(q.level=4,'较难',if(q.level=5,'困难','未知难度'))))) questionType,
+            IFNULL(count(q.id),0) as questionCount,
+            IFNULL(sum(q.score_value),0) as totalScore,
+            IFNULL(sum(score_detail.score),0) as userScore,
+            IFNULL(sum(score_detail.score)/sum(q.score_value),0) as scoreRate
+        from score_detail
+                 join question q on score_detail.question_id = q.id and q.is_deleted=0
+        where score_detail.is_deleted = 0 and score_detail.score_id=#{scoreId}
+        group by q.level
+    </select>
+    <select id="getSubjectKnowledgePoint" resultType="java.util.HashMap">
+        select
+        IFNULL(count(question.id),0) as questionCount,
+        IFNULL(sum(question.score_value!=score_detail.score),0) as wrongCount,
+        sum(score_detail.score)/sum(question.score_value) as scoreRate,
+        IFNULL(sum(question.score_value!=score_detail.score),0)/IFNULL(count(question.id),0) as wrongRate
+        from score
+        join score_detail on score_detail.score_id = score.id and score_detail.is_deleted = 0
+        join question on score_detail.question_id = question.id and question.is_deleted = 0
+        where
+        score.student_id = #{studentId}
+        and score.paper_id in (select id from paper where subject_id = #{subjectId} and is_deleted = 0)
+        and score.is_deleted = 0
+        and score.review = '1'
+        and question.knowledge_point_ids like concat('%[', #{knowledgePointId}, ']%')
+    </select>
+    <select id="reviewed" resultType="com.exam.vo.MarkingPaperVo">
+        select
+        score.id as scoreId,
+        user.name as studentName,
+        score.paper_id as paperId,
+        s.name subjectName,
+        paper.name as paperName,
+        score.score as score,
+        score.answer_date as answerDate,
+        score.time as answerTime,
+        score.review as reviewStatus
+        from score
+        join student on score.student_id = student.student_id and student.is_deleted = 0
+        join paper on score.paper_id = paper.id and paper.is_deleted = 0
+        join user on student.user_id = user.id and user.is_deleted = 0
+        join subject s on paper.subject_id = s.id and s.is_deleted = 0
+        <where>
+            <if test="paperId != 0 and paperId!= null and paperId!= '' ">
+                and score.paper_id = #{paperId}
+            </if>
+            <if test="classId != 0 and classId!= null and classId!= '' ">
+                and student.class_id = #{classId}
+            </if>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (score.id like concat('%', #{keyword}, '%') or user.name like concat('%', #{keyword}, '%')
+                or paper.name like concat('%', #{keyword}, '%') or score.answer_date like concat('%', #{keyword}, '%')
+                )
+            </if>
+            and score.is_deleted = 0 and score.review = '1'
+        </where>
+    </select>
+    <select id="getClassSubjectKnowledgePointScore" resultType="java.util.HashMap">
+        select
+            IFNULL(count(question.id),0) as questionCount,
+            IFNULL(sum(question.score_value!=score_detail.score),0) as wrongCount,
+            sum(score_detail.score)/sum(question.score_value) as scoreRate,
+            IFNULL(sum(question.score_value!=score_detail.score),0)/IFNULL(count(question.id),0) as wrongRate
+        from score
+                 join score_detail on score_detail.score_id = score.id and score_detail.is_deleted = 0
+                 join question on score_detail.question_id = question.id and question.is_deleted = 0
+                 join class_paper on score.paper_id = class_paper.paper_id and class_paper.is_deleted = 0
+        where
+            class_paper.class_id = #{classId}
+          and score.paper_id in (select id from paper where subject_id = #{subjectId} and is_deleted = 0)
+          and score.is_deleted = 0
+          and score.review = '1'
+          and question.knowledge_point_ids like concat('%[', #{knowledgePointId}, ']%')
+    </select>
+</mapper>

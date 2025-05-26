@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.TeacherMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Teacher">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="eno" column="eno" jdbcType="BIGINT"/>
+            <result property="userId" column="user_id" jdbcType="BIGINT"/>
+            <result property="instituteId" column="institute_id" jdbcType="BIGINT"/>
+            <result property="position" column="position" jdbcType="OTHER"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,user_id,institute_id,
+        position,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getTeacherList" resultType="com.exam.vo.TeacherManageVo">
+        select
+        t.eno eno,
+        u.name name,
+        ifNULL(i.name,'未知') institution,
+        if(t.position = 1, '助教', if(t.position = 2, '讲师', if(t.position = 3, '副教授',if(t.position = 4, '教授', '未知')))) as position,
+        ifNULL(c.classNum, 0) as classNum,
+        t.create_time createTime,
+        t.update_time updateTime
+        from teacher t
+        left join (
+            select teacher_id,count(*) as classNum
+            from class
+            where is_deleted = 0
+            group by teacher_id
+            ) c on t.id = c.teacher_id
+        left join user u on t.user_id = u.id and u.is_deleted = 0
+        left join institution i on t.institute_id = i.id and i.is_deleted = 0
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (t.eno like #{keyword} or t.name like #{keyword} or t.institution like #{keyword})
+            </if>
+            and t.is_deleted = 0
+        </where>
+        order by t.create_time desc
+    </select>
+    <select id="getTeacherInfo" resultType="com.exam.vo.TeacherInfoVo">
+        select
+        t.eno eno,
+        u.name name,
+        u.tel tel,
+        u.sex sex,
+        u.email email,
+        u.card_id cardId,
+        ifNULL(i.name,'未知') institution,
+        t.position position
+        from teacher t
+        left join user u on t.user_id = u.id and u.is_deleted = 0
+        left join institution i on t.institute_id = i.id and i.is_deleted = 0
+        where t.eno = #{eno} and t.is_deleted = 0
+    </select>
+</mapper>

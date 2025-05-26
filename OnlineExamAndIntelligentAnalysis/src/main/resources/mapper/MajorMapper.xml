@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.MajorMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Major">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="name" column="name" jdbcType="VARCHAR"/>
+        <result property="institutionId" column="institution_id" jdbcType="BIGINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,name,institution_id
+    </sql>
+    <select id="getMajorList" resultType="com.exam.vo.MajorInfoVo">
+        SELECT
+        major.id majorId,
+        major.name majorName,
+        institution.name institutionName,
+        ifnull(count(class.id),0) classCount,
+        ifnull(sum(s.studentCount),0) studentCount,
+        major.create_time createTime,
+        major.update_time updateTime
+        FROM major
+        JOIN institution on major.institution_id = institution.id
+        LEFT JOIN
+        class on major.id = class.major_id and class.is_deleted=0
+        LEFT JOIN
+        (
+        select class_id, COUNT(*) as studentCount
+        from student
+        where is_deleted = 0
+        group by class_id
+        ) s ON class.id = s.class_id
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                AND major.name LIKE CONCAT('%', #{keyword}, '%') or institution.name LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+            and major.is_deleted = 0
+        </where>
+        GROUP BY majorId
+    </select>
+</mapper>

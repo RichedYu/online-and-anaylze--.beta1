@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.ClazzMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Clazz">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="name" column="name" jdbcType="VARCHAR"/>
+            <result property="teacherId" column="teacher_id" jdbcType="BIGINT"/>
+            <result property="grade" column="grade" jdbcType="CHAR"/>
+            <result property="majorId" column="major_id" jdbcType="BIGINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,name,teacher_id,
+        grade,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getClassList" resultType="com.exam.vo.ClassInfoVo">
+        select
+        class.id classId,
+        class.name className,
+        class.grade grade,
+        major.name majorName,
+        ifnull(s.studentCount, 0) studentCount,
+        teacher.eno teacherId,
+        ifnull(user.name, '暂无') teacherName,
+        class.create_time createTime,
+        class.update_time updateTime
+        from class
+        left join (
+            select class_id, count(*) as studentCount
+            from student
+            where is_deleted = 0
+            group by class_id
+            ) as s on class.id = s.class_id
+        left join major on class.major_id = major.id and major.is_deleted = 0
+        left join teacher on class.teacher_id = teacher.id and teacher.is_deleted = 0
+        left join user on teacher.user_id = user.id and user.is_deleted = 0
+        <where>
+            <if test="keyword!= null and keyword!= '' and keyword!= 'null'">
+                and (class.name like concat('%', #{keyword}, '%')
+                or major.name like concat('%', #{keyword}, '%')
+                or class.grade like concat('%', #{keyword}, '%')
+                or user.name like concat('%', #{keyword}, '%'))
+            </if>
+            and class.is_deleted = 0
+        </where>
+        order by class.create_time desc
+    </select>
+    <select id="getClassBySubject" resultType="java.util.HashMap">
+        select
+        distinct class.id id,
+        class.name name
+        from class
+        join class_paper cp on class.id = cp.class_id and cp.is_deleted = 0
+        join paper p on cp.paper_id = p.id and p.is_deleted = 0
+        join subject s on p.subject_id = s.id and s.is_deleted = 0
+        where s.id = #{subjectId}
+        and class.is_deleted = 0
+
+    </select>
+</mapper>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.StudentMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.Student">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="studentId" column="student_id" jdbcType="BIGINT"/>
+        <result property="userId" column="user_id" jdbcType="BIGINT"/>
+        <result property="classId" column="class_id" jdbcType="BIGINT"/>
+        <result property="institutionId" column="institute_id" jdbcType="BIGINT"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,user_id,class_id,
+        institute_id,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getStudentInfo" resultType="com.exam.vo.StudentInfoVo">
+        select u.id         userId,
+               s.student_id studentId,
+               u.name       name,
+               u.sex        sex,
+               i.id         institutionId,
+               i.name       instituteName,
+               m.id         majorId,
+               m.name       majorName,
+               c2.id        classId,
+               c2.name      className,
+               c2.grade      grade,
+               ifnull(u.tel,'暂无')      tel,
+               u.email      email,
+               u.card_id    cardId
+        from student s
+                 join user u on s.user_id = u.id and u.is_deleted = 0
+                 join class c2 on s.class_id = c2.id and c2.is_deleted = 0
+                 join major m on c2.major_id = m.id and m.is_deleted = 0
+                 join institution i on m.institution_id = i.id and i.is_deleted = 0
+        where s.student_id = #{studentId}
+          and s.is_deleted = 0
+    </select>
+    <select id="getClassId" resultType="Long">
+        select class_id
+        from student
+        where student_id = #{studentId}
+          and is_deleted = 0
+    </select>
+    <select id="getAllStudentIdByClassId" resultType="java.lang.Long">
+        select student_id from student where class_id = #{classId} and is_deleted = 0
+    </select>
+    <select id="getStudentList" resultType="com.exam.vo.StudentInfoVo">
+        select u.id         userId,
+               s.student_id studentId,
+               u.name       name,
+               u.sex        sex,
+               i.id         institutionId,
+               i.name       instituteName,
+               m.id         majorId,
+               m.name       majorName,
+               c2.id        classId,
+               c2.name      className,
+               c2.id        classId,
+               c2.grade      grade,
+               ifnull(u.tel,'暂无')  tel,
+               u.email      email,
+               u.card_id    cardId,
+               s.create_time createTime,
+               s.update_time updateTime
+        from student s
+                 join user u on s.user_id = u.id and u.is_deleted = 0
+                 join class c2 on s.class_id = c2.id and c2.is_deleted = 0
+                 join major m on c2.major_id = m.id and m.is_deleted = 0
+                 join institution i on m.institution_id = i.id and i.is_deleted = 0
+        <where>
+            <if test="keyword != null and keyword != '' and keyword != 'null'">
+                and (u.name like concat('%', #{keyword}, '%') or u.tel like concat('%', #{keyword}, '%') or u.email like concat('%', #{keyword}, '%') or u.card_id like concat('%', #{keyword}, '%')
+                    or i.name like concat('%', #{keyword}, '%') or m.name like concat('%', #{keyword}, '%') or c2.name like concat('%', #{keyword}, '%') or c2.grade like concat('%', #{keyword}, '%'))
+            </if>
+            and s.is_deleted = 0
+        </where>
+    </select>
+    <select id="getClassStudent" resultType="java.util.HashMap">
+        select
+        s.id id,
+        s.student_id studentId,
+        user.name name
+        from student s
+        join user on s.user_id = user.id
+        where s.class_id = #{classId} and s.is_deleted = 0
+
+    </select>
+</mapper>

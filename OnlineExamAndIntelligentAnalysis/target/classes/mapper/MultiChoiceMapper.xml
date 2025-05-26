@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.mapper.MultiChoiceMapper">
+
+    <resultMap id="BaseResultMap" type="com.exam.entity.MultiChoice">
+        <id property="id" column="id" jdbcType="BIGINT"/>
+        <result property="questionId" column="question_id" jdbcType="BIGINT"/>
+        <result property="optiona" column="optionA" jdbcType="VARCHAR"/>
+        <result property="optionb" column="optionB" jdbcType="VARCHAR"/>
+        <result property="optionc" column="optionC" jdbcType="VARCHAR"/>
+        <result property="optiond" column="optionD" jdbcType="VARCHAR"/>
+        <result property="correctAnswer" column="correct_answer" jdbcType="OTHER"/>
+        <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+        <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+        <result property="isDeleted" column="is_deleted" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id
+        ,question_id,optionA,
+        optionB,optionC,optionD,
+        correct_answer,create_time,update_time,
+        is_deleted
+    </sql>
+    <select id="getAllDetailByPaperId" resultType="com.exam.vo.MultiChoiceVo">
+        select q.question question,
+               mc.optionA optionA,
+               mc.optionB optionB,
+               mc.optionC optionC,
+               mc.optionD optionD,
+               q.type     type,
+               q.id       questionId,
+               q.score_value score,
+               mc.correct_answer answer
+        from paper p
+                 join paper_question pq on p.id = pq.paper_id and pq.is_deleted = 0
+                 join question q on pq.question_id = q.id and q.is_deleted = 0
+                 join multi_choice mc on mc.question_id = q.id and mc.is_deleted = 0
+        where p.id = #{paperId}
+          and (q.type = '2' or q.type = '1')
+          and p.is_deleted = 0
+    </select>
+</mapper>

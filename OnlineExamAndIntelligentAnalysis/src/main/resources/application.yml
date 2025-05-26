@@ -1,0 +1,63 @@
+server:
+  port: 8880
+
+cm:
+  # 中转服务地址
+  aicore:
+    key: sk-TXBB4o60OjmqaTXiBilrLOveLRBNIkIztZAfuBmsoVslOZEp
+    url: https://api.xty.app
+
+spring:
+  mvc:
+    async:
+      request-timeout: 600000 # 异步请求超时时间，单位为毫秒
+  ai:
+    openai:
+      api-key: ${cm.aicore.key}
+      base-url: ${cm.aicore.url}
+
+  servlet:
+    session:
+      timeout: 1800 # session过期时间，单位为秒
+    multipart:
+      max-request-size: 10MB
+      max-file-size: 10MB
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/online_exam?useSSL=true&useUnicode=true&characterEncoding=UTF-8
+    username: root
+    password: 123456
+    type: com.alibaba.druid.pool.DruidDataSource
+  jackson:
+    time-zone: GMT+8 #配置时区
+  # 添加Redis配置
+  data:
+    redis:
+      host: 192.168.164.128
+      port: 6379
+      database: 0
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  type-enums-package: com.exam.enums # 枚举类的包扫描地址
+
+minio:
+  endpoint: http://192.168.164.128:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: exam-bucket
+
+
+# 阿里云短信服务配置参数
+aliyun:
+  sms:
+    access-key-id: LTAI5tGWo1DRVmLjCjNF8cid
+    access-key-secret: dCVDc7pC4mtjopAaNnaX6q64HkhIsD
+    endpoint: dysmsapi.aliyuncs.com
+
+logging:
+  level:
+    com:
+      exam: debug
+
+
