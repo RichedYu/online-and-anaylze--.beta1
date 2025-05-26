@@ -1,0 +1,201 @@
+<template>
+    <div>
+   
+   <div style="margin: 20px 5px">
+    <!--    新增按钮-->
+   <div style="margin: 3px 10px;margin-bottom: 10px;float: left">
+     <el-button type="primary" @click="handleAdd">新增</el-button>
+   </div>
+   <!--    新增弹窗-->
+    <el-dialog v-model="dialogVisible" width="30%"  :title="title" :before-close="handleClose">
+            <el-form :model="form" :rules="rules" ref="form" status-icon label-width="auto" style="max-width: 600px">
+            <el-form-item label="学院名称" prop="name"><br>
+            <el-input v-model="form.institutionName" style="width:80%" placeholder="请输入学院名称" v-on:keyup.enter="create"/>
+            </el-form-item>
+            </el-form>
+            <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="dialogVisible = false">取消</el-button>
+                <el-button type="primary" @click="create">创建</el-button>
+            </div>
+            </template>
+           
+        </el-dialog>  
+   <!--    搜索框-->
+    <div style="float: right;">
+        <el-input v-model="keyword" style="width: 240px" placeholder="请输入关键字" v-on:keyup.enter="list"/>
+        <el-button style="margin-left: 10px" type="primary" @click="list">检索</el-button>
+    </div>
+     
+   </div>
+   <div class="info">
+    <!--    显示表格-->
+        <el-table :data="tableData" height="440" stripe style="width: 100%">
+            <el-table-column prop="institutionId" label="学院编号" sortable/>
+            <el-table-column prop="institutionName" label="学院名称"/>
+            <el-table-column prop="majorCount" label="专业数量"/>
+            <el-table-column prop="studentCount" label="学生人数"/>
+            <el-table-column prop="createTime" label="创建时间"/>
+            <el-table-column prop="updateTime" label="更新时间"/>
+
+            <el-table-column fixed="right" label="操作" width="120">
+            <template #default="scope">
+                <el-button type="text" @click="handleEdit(scope.row)">编辑</el-button>
+                <el-popconfirm title="确认删除吗?" @confirm="del(scope.row.institutionId)">
+                <template #reference>
+                    <el-button type="text" >删除</el-button>
+                </template>
+                </el-popconfirm>
+            </template>
+            </el-table-column>
+        </el-table>
+    </div>
+
+    <!--    分页查询-->
+   <div style="margin: 10px 0">
+     <el-pagination
+         v-model:current-page="currentPage"
+         v-model:page-size="pageSize"
+         :page-sizes="[2,8,16]"
+         layout="total,sizes,prev, pager, next, jumper"
+         :total="total"
+         @size-change="handleSizeChange"
+         @current-change="handleCurrentChange"
+     />
+   </div>
+    </div>
+</template>
+<script>
+import request from "@/utils/request";
+import {ElMessage} from "element-plus";
+
+export default {
+  name: "institutionInfo",
+  
+  data() {
+    return {
+        title: "新增学院",
+        placeholder: "请输入学院名称",
+        form: {
+            institutionName: ''
+        },
+        rules: {
+            institutionName: [
+                { required: true, message: "请输入学院名称", trigger: "blur" }
+            ]
+        },
+        keyword: null,
+        currentPage:1,// 当前页
+        pageSize:8,// 每页显示记录数
+        total:0,// 共多少条记录
+        tableData: [],
+        dialogVisible: false
+    }
+  },
+  created() {
+    this.list()
+  },
+  methods: {
+    list() {
+        let current = this.currentPage
+        let size = this.pageSize
+        let keyword = this.keyword
+        if(keyword === ''){
+            keyword = null
+        }
+      request.get(`/api/exam/institutionList/${current}/${size}/${keyword}`).then(res => {
+        console.log("tableData:"+res.data.records[0].institutionId)
+        this.tableData = res.data.records
+        this.total = res.data.total
+      }).catch(err => {
+        console.log(err)
+      })
+    },
+    handleSizeChange(size) {
+      this.pageSize = size
+      this.list()
+    },
+    handleCurrentChange(page) {
+      this.currentPage = page
+      this.list()
+    },
+
+    handleEdit(row) {
+      this.$router.push({
+        path: "/edit",
+        query: {
+          id: row.id
+        }
+      })
+    },
+    handleAdd() {
+      this.title = "新增学院"
+      this.form.institutionName = ''
+      this.dialogVisible = true
+    },
+    create(){
+      // 表单验证是否通过
+      this.$refs['form'].validate((valid) => {
+        // valid就是表单校验后返回的结果
+        if(!valid){
+          this.$message({
+            type:"error",
+            message:"表单校验失败"
+          })
+          return false
+        }else {
+          this.save()
+        }
+      })
+      
+    },
+    save() {
+      request.post('/api/exam/createInstitution', this.form.institutionName).then(response => {
+          if (response.code === 200) {
+              this.$message.success('创建成功');
+              this.dialogVisible = false;
+              this.list()
+          }else if(response.code === 208){
+              this.$message.error('该学院已存在');
+          }else {
+              this.$message.error('创建失败');
+          }
+            
+      }).catch(error => {
+          console.log(error);
+      });
+    },
+    del(id) {
+      request.delete("/api/exam/deleteInstitution/" + id).then(res => {
+        if (res.code === 200) {
+          ElMessage({
+            message: "删除成功",
+            type: "success"
+          })
+          this.list()
+        } else {
+          ElMessage({
+            message: res.msg,
+            type: "error"
+          })
+        }
+      })
+    }
+  }
+}
+</script>
+<style scoped>
+.myClass{
+  font-size: 16px;
+  font-weight: bold;
+  font-family: '楷体';
+  margin-left: 10px;
+  float: left;
+}
+.info{
+  
+  margin-top: 60px;
+  margin-right: 30px;
+  
+}
+</style>
